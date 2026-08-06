@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-CZXQQJ5GRV"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-CZXQQJ5GRV');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <meta name="google-site-verification" content="JL_WAJ5Bl2OsTdAh1DDK26DDdqrtY1NeNLjeuXoJeks" />
 <title>ITスキルアップクイズ | 全1000問からランダム出題</title>
-   
 <link rel="stylesheet" href="quiz-style.css">
 </head>
- 
 <body>
 
   <main class="quiz-container">
@@ -19,7 +25,7 @@
       <p class="lead">
         HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの
         全<strong>1000問</strong>から、毎回ランダムに<strong>100問</strong>を出題。<br>
-        1問ごとに解説付きで、新社会人・学生の基礎固めにどうぞ。
+        新社会人・学生の基礎固めにどうぞ。
       </p>
 
       <ul class="category-list">
@@ -51,11 +57,6 @@
         <button class="answer-btn" data-index="1"></button>
         <button class="answer-btn" data-index="2"></button>
         <button class="answer-btn" data-index="3"></button>
-      </div>
-
-      <div id="explanation-box" class="explanation-box hidden">
-        <p id="explanation-text" class="explanation-text"></p>
-        <button id="next-btn" class="btn-next">次の問題へ</button>
       </div>
     </section>
 
