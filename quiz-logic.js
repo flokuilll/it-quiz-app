@@ -23,6 +23,12 @@ const explanationBox = document.getElementById(`explanation-box`);
 const explanationText = document.getElementById(`explanation-text`);
 const nextBtn = document.getElementById(`next-btn`);
 const categoryButtons = document.querySelectorAll(`.category-btn`);
+const progressSummaryValue = document.getElementById(`progress-summary-value`);
+const progressSummaryFill = document.getElementById(`progress-summary-fill`);
+const reviewBtn = document.getElementById(`review-btn`);
+const historyList = document.getElementById(`history-list`);
+const shareX = document.getElementById(`share-x`);
+const shareLine = document.getElementById(`share-line`);
 
 /* ---- 問題データ(全1000問・5カテゴリ×200問・解説文付き) ---- */
 const categories = [
@@ -1063,6 +1069,7 @@ let sessionQuestions = [];
 let currentQuestionIndex = 0;
 let score = 0;
 let isAnswering = false;
+let currentSessionCategory = "";
 
 const QUESTIONS_PER_SESSION = 100;
 
@@ -1080,6 +1087,7 @@ function shuffleArray(array) {
 function shuffleQuestionChoices(q) {
     const order = shuffleArray(q.choices.map((_, i) => i));
     return {
+        id: q.id,
         question: q.question,
         choices: order.map(i => q.choices[i]),
         answer: order.indexOf(q.answer),
@@ -1090,9 +1098,10 @@ function shuffleQuestionChoices(q) {
 }
 
 /* 全カテゴリを1つの配列(1000問)にまとめる */
-const quizData = categories.flatMap(function (cat) {
-    return cat.questions.map(function (q) {
+const quizData = categories.flatMap(function (cat, catIndex) {
+    return cat.questions.map(function (q, qIndex) {
         return {
+            id: `${catIndex}-${qIndex}`,
             question: q.question,
             choices: q.choices,
             answer: q.answer,
@@ -1103,6 +1112,124 @@ const quizData = categories.flatMap(function (cat) {
     });
 });
 
+/* ---- 学習履歴・進捗管理(localStorage) ---- */
+const STORAGE_KEY = "itSkillUpQuiz_progress_v1";
+const HISTORY_LIMIT = 20;
+const TOTAL_QUESTION_COUNT = quizData.length;
+
+function loadProgressState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { masteredIds: [], wrongIds: [], history: [] };
+        const parsed = JSON.parse(raw);
+        return {
+            masteredIds: Array.isArray(parsed.masteredIds) ? parsed.masteredIds : [],
+            wrongIds: Array.isArray(parsed.wrongIds) ? parsed.wrongIds : [],
+            history: Array.isArray(parsed.history) ? parsed.history : []
+        };
+    } catch (e) {
+        // 保存データが壊れていた場合は初期状態にフォールバックする
+        return { masteredIds: [], wrongIds: [], history: [] };
+    }
+}
+
+function saveProgressState(state) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+        // プライベートモード等で保存できない場合は静かに諦める(機能停止させない)
+    }
+}
+
+let progressState = loadProgressState();
+
+/* 1問回答するたびに呼び出し、習得済み/苦手のセットを更新する */
+function recordAnswer(questionId, isCorrect) {
+    const masteredSet = new Set(progressState.masteredIds);
+    const wrongSet = new Set(progressState.wrongIds);
+
+    if (isCorrect) {
+        masteredSet.add(questionId);
+        wrongSet.delete(questionId);
+    } else {
+        wrongSet.add(questionId);
+    }
+
+    progressState.masteredIds = Array.from(masteredSet);
+    progressState.wrongIds = Array.from(wrongSet);
+    saveProgressState(progressState);
+}
+
+/* 1セッション終了時に履歴として記録する(最新HISTORY_LIMIT件のみ保持) */
+function recordSessionResult(categoryLabel, sessionScore, sessionTotal) {
+    const entry = {
+        date: new Date().toISOString(),
+        category: categoryLabel,
+        score: sessionScore,
+        total: sessionTotal,
+        percentage: Math.round((sessionScore / sessionTotal) * 100)
+    };
+    progressState.history.unshift(entry);
+    progressState.history = progressState.history.slice(0, HISTORY_LIMIT);
+    saveProgressState(progressState);
+}
+
+function formatHistoryDate(isoString) {
+    const d = new Date(isoString);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${d.getFullYear()}/${mm}/${dd} ${hh}:${min}`;
+}
+
+/* スタート画面の進捗サマリー・復習ボタン・履歴を最新状態に描画する */
+function renderProgressSummary() {
+    const masteredCount = progressState.masteredIds.length;
+    const percentage = Math.round((masteredCount / TOTAL_QUESTION_COUNT) * 100);
+
+    progressSummaryValue.textContent = `${masteredCount} / ${TOTAL_QUESTION_COUNT}問 (${percentage}%)`;
+    progressSummaryFill.style.width = `${percentage}%`;
+
+    const wrongCount = progressState.wrongIds.length;
+    reviewBtn.textContent = `苦手問題を復習する(${wrongCount}問)`;
+    reviewBtn.disabled = wrongCount === 0;
+
+    renderHistoryList();
+}
+
+function renderHistoryList() {
+    historyList.innerHTML = "";
+
+    if (progressState.history.length === 0) {
+        const emptyItem = document.createElement("li");
+        emptyItem.className = "history-empty";
+        emptyItem.textContent = "まだ学習履歴がありません。";
+        historyList.appendChild(emptyItem);
+        return;
+    }
+
+    progressState.history.forEach(function (entry) {
+        const item = document.createElement("li");
+        item.className = "history-item";
+        item.innerHTML = `
+            <span class="history-date">${formatHistoryDate(entry.date)}</span>
+            <span class="history-category">${entry.category}</span>
+            <span class="history-score">${entry.score} / ${entry.total} (${entry.percentage}%)</span>
+        `;
+        historyList.appendChild(item);
+    });
+}
+
+/* 結果画面のSNSシェアリンクを、直前のセッション結果に合わせて更新する */
+function updateShareLinks(sessionScore, sessionTotal, categoryLabel) {
+    const shareText = `ITスキルアップクイズで${categoryLabel}に挑戦し、${sessionScore} / ${sessionTotal}問正解でした!`;
+    const shareUrl = window.location.href;
+
+    shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    shareLine.href = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+}
+
 /* ---- イベント登録 ---- */
 startBtn.addEventListener("click", function () {
     startQuiz(null);
@@ -1112,6 +1239,11 @@ restartBtn.addEventListener("click", function () {
     // もう一度カテゴリを選び直せるようスタート画面に戻る
     resultScreen.classList.add("hidden");
     startScreen.classList.remove("hidden");
+});
+
+reviewBtn.addEventListener("click", function () {
+    if (progressState.wrongIds.length === 0) return;
+    startQuiz(null, "review");
 });
 
 categoryButtons.forEach(function (btn) {
@@ -1139,6 +1271,8 @@ answersContainer.addEventListener("click", function (event) {
         allButtons[correctIndex].classList.add("is-correct");
     }
 
+    recordAnswer(currentQuestion.id, selectedIndex === correctIndex);
+
     allButtons.forEach(function (b) {
         b.disabled = true;
     });
@@ -1163,18 +1297,38 @@ nextBtn.addEventListener("click", function () {
 });
 
 /* ---- メイン処理 ---- */
-function startQuiz(categoryFilter) {
-    // カテゴリが指定されていればそのカテゴリの200問だけを対象にする
-    const sourcePool = categoryFilter
-        ? quizData.filter(function (q) { return q.category === categoryFilter; })
-        : quizData;
+function startQuiz(categoryFilter, mode) {
+    const sessionMode = mode === "review" ? "review" : "normal";
 
-    const sessionSize = Math.min(QUESTIONS_PER_SESSION, sourcePool.length);
+    // 復習モードでは「苦手問題(直近で間違えた問題)」のみを出題対象にする
+    let sourcePool;
+    if (sessionMode === "review") {
+        const wrongIdSet = new Set(progressState.wrongIds);
+        sourcePool = quizData.filter(function (q) { return wrongIdSet.has(q.id); });
+    } else if (categoryFilter) {
+        // カテゴリが指定されていればそのカテゴリの200問だけを対象にする
+        sourcePool = quizData.filter(function (q) { return q.category === categoryFilter; });
+    } else {
+        sourcePool = quizData;
+    }
+
+    if (sourcePool.length === 0) {
+        return;
+    }
+
+    // 復習モードは苦手問題をすべて出題し、それ以外は最大100問に制限する
+    const sessionSize = sessionMode === "review"
+        ? sourcePool.length
+        : Math.min(QUESTIONS_PER_SESSION, sourcePool.length);
 
     // 対象プールの中から毎回ランダムに出題し、選択肢の順序もシャッフルする
     sessionQuestions = shuffleArray(sourcePool)
         .slice(0, sessionSize)
         .map(shuffleQuestionChoices);
+
+    currentSessionCategory = sessionMode === "review"
+        ? "苦手問題復習"
+        : (categoryFilter || "全カテゴリ");
 
     currentQuestionIndex = 0;
     score = 0;
@@ -1234,4 +1388,11 @@ function showResult() {
         comment = "まずは基礎から一つずつ。挑戦を重ねるほど身についていきます。";
     }
     resultSubtext.textContent = comment;
+
+    recordSessionResult(currentSessionCategory, score, total);
+    updateShareLinks(score, total, currentSessionCategory);
+    renderProgressSummary();
 }
+
+/* ---- 初期表示 ---- */
+renderProgressSummary();
