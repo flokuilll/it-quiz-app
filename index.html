@@ -7,7 +7,7 @@
 
 <!-- SEO: 基本メタ情報 -->
 <meta name="description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの全1000問から毎回ランダムに100問を出題する無料ITスキルアップクイズ。1問ごとに解説付きで、新社会人・学生の基礎固めに。">
-<link rel="canonical" href="https://flokuilll.github.io/it-quiz-app/">
+<link rel="canonical" href="https://example.com/">
 <!-- ▲ canonicalのURLは実際に公開するドメインに置き換えてください -->
 
 <!-- SEO: OGP(Facebook等でのシェア表示) -->
@@ -77,6 +77,18 @@
     <section id="start-screen" class="screen">
       <p class="eyebrow">IT SKILL-UP QUIZ</p>
       <h1>ITスキルアップクイズ</h1>
+
+      <div id="resume-banner" class="resume-banner hidden">
+        <div class="resume-banner-text">
+          <span class="resume-banner-title">前回の続きがあります</span>
+          <span id="resume-banner-detail" class="resume-banner-detail"></span>
+        </div>
+        <div class="resume-banner-actions">
+          <button id="resume-btn" class="btn-primary btn-resume">続きから再開する</button>
+          <button id="discard-resume-btn" class="btn-text-discard">破棄する</button>
+        </div>
+      </div>
+
       <p class="lead">
         HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの
         全<strong>1000問</strong>から、毎回ランダムに<strong>100問</strong>を出題。<br>
@@ -149,8 +161,11 @@
 
     <section id="quiz-screen" class="screen hidden">
       <div class="quiz-topbar">
-        <span id="category-badge" class="category-badge"></span>
-        <span id="score-badge" class="score-badge">スコア: 0</span>
+        <button id="pause-btn" class="pause-btn" title="中断してホームに戻る">← 中断してホームへ</button>
+        <div class="quiz-topbar-right">
+          <span id="category-badge" class="category-badge"></span>
+          <span id="score-badge" class="score-badge">スコア: 0</span>
+        </div>
       </div>
 
       <div class="progress-track">

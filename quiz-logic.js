@@ -29,6 +29,11 @@ const reviewBtn = document.getElementById(`review-btn`);
 const historyList = document.getElementById(`history-list`);
 const shareX = document.getElementById(`share-x`);
 const shareLine = document.getElementById(`share-line`);
+const resumeBanner = document.getElementById(`resume-banner`);
+const resumeBannerDetail = document.getElementById(`resume-banner-detail`);
+const resumeBtn = document.getElementById(`resume-btn`);
+const discardResumeBtn = document.getElementById(`discard-resume-btn`);
+const pauseBtn = document.getElementById(`pause-btn`);
 
 /* ---- 問題データ(全1000問・5カテゴリ×200問・解説文付き) ---- */
 const categories = [
@@ -1230,6 +1235,72 @@ function updateShareLinks(sessionScore, sessionTotal, categoryLabel) {
     shareLine.href = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
 }
 
+/* ---- 中断・再開機能(localStorage) ---- */
+const PAUSED_SESSION_KEY = "itSkillUpQuiz_pausedSession_v1";
+
+/* 現在の出題状況をまるごと保存する。showQuestion()のたびに呼ばれる想定 */
+function savePausedSession() {
+    if (!sessionQuestions.length) return;
+
+    const pausedSession = {
+        sessionQuestions: sessionQuestions,
+        currentQuestionIndex: currentQuestionIndex,
+        score: score,
+        category: currentSessionCategory,
+        savedAt: new Date().toISOString()
+    };
+
+    try {
+        localStorage.setItem(PAUSED_SESSION_KEY, JSON.stringify(pausedSession));
+    } catch (e) {
+        // 保存できない環境(プライベートモード等)では中断機能を静かに諦める
+    }
+}
+
+/* 保存済みの中断セッションを読み込む。無効なデータはnullを返す */
+function loadPausedSession() {
+    try {
+        const raw = localStorage.getItem(PAUSED_SESSION_KEY);
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw);
+        const hasValidQuestions = Array.isArray(parsed.sessionQuestions) && parsed.sessionQuestions.length > 0;
+        const hasValidIndex = typeof parsed.currentQuestionIndex === "number";
+
+        if (!hasValidQuestions || !hasValidIndex) return null;
+        // 全問回答済み(=最後まで終わっている)なら再開対象にしない
+        if (parsed.currentQuestionIndex >= parsed.sessionQuestions.length) return null;
+
+        return parsed;
+    } catch (e) {
+        return null;
+    }
+}
+
+function clearPausedSession() {
+    try {
+        localStorage.removeItem(PAUSED_SESSION_KEY);
+    } catch (e) {
+        // 何もしない(削除に失敗しても致命的ではない)
+    }
+}
+
+/* スタート画面の再開バナーを、保存済みデータの有無に応じて表示・更新する */
+function renderResumeBanner() {
+    const paused = loadPausedSession();
+
+    if (!paused) {
+        resumeBanner.classList.add("hidden");
+        return;
+    }
+
+    const total = paused.sessionQuestions.length;
+    const answeredCount = paused.currentQuestionIndex;
+    resumeBannerDetail.textContent =
+        `${paused.category} ・ 問題 ${answeredCount + 1} / ${total} から再開できます(現在のスコア: ${paused.score})`;
+    resumeBanner.classList.remove("hidden");
+}
+
 /* ---- イベント登録 ---- */
 startBtn.addEventListener("click", function () {
     startQuiz(null);
@@ -1244,6 +1315,43 @@ restartBtn.addEventListener("click", function () {
 reviewBtn.addEventListener("click", function () {
     if (progressState.wrongIds.length === 0) return;
     startQuiz(null, "review");
+});
+
+pauseBtn.addEventListener("click", function () {
+    // 現在の出題状況はshowQuestion()のたびに自動保存済みなので、ここでは画面遷移のみ行う
+    savePausedSession();
+
+    quizScreen.classList.add("hidden");
+    startScreen.classList.remove("hidden");
+
+    renderResumeBanner();
+    renderProgressSummary();
+});
+
+resumeBtn.addEventListener("click", function () {
+    const paused = loadPausedSession();
+    if (!paused) {
+        // 何らかの理由でデータが消えていた場合はバナーを更新して終了する
+        renderResumeBanner();
+        return;
+    }
+
+    sessionQuestions = paused.sessionQuestions;
+    currentQuestionIndex = paused.currentQuestionIndex;
+    score = paused.score;
+    currentSessionCategory = paused.category;
+    scoreBadge.textContent = `スコア: ${score}`;
+
+    startScreen.classList.add("hidden");
+    quizScreen.classList.remove("hidden");
+    resultScreen.classList.add("hidden");
+
+    showQuestion();
+});
+
+discardResumeBtn.addEventListener("click", function () {
+    clearPausedSession();
+    renderResumeBanner();
 });
 
 categoryButtons.forEach(function (btn) {
@@ -1366,6 +1474,9 @@ function showQuestion() {
     const current = currentQuestionIndex + 1;
     progressLabel.textContent = `問題 ${current} / ${total}`;
     progressFill.style.width = `${(currentQuestionIndex / total) * 100}%`;
+
+    // 表示するたびに現在の出題状況を保存し、途中でブラウザを閉じても再開できるようにする
+    savePausedSession();
 }
 
 function showResult() {
@@ -1391,8 +1502,11 @@ function showResult() {
 
     recordSessionResult(currentSessionCategory, score, total);
     updateShareLinks(score, total, currentSessionCategory);
+    clearPausedSession(); // 最後まで終えたセッションは再開対象から外す
     renderProgressSummary();
+    renderResumeBanner();
 }
 
 /* ---- 初期表示 ---- */
 renderProgressSummary();
+renderResumeBanner();
