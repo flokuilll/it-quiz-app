@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ITスキルアップクイズ | 全1000問からランダム出題</title>
+<title>ITスキルアップクイズ | 1000問以上からランダム出題</title>
 
 <!-- SEO: 基本メタ情報 -->
-<meta name="description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの全1000問から毎回ランダムに100問を出題する無料ITスキルアップクイズ。1問ごとに解説付きで、新社会人・学生の基礎固めに。">
+<meta name="description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツール・AIの1000問以上から毎回ランダムに100問を出題する無料ITスキルアップクイズ。1問ごとに解説付きで、新社会人・学生の基礎固めに。">
 <link rel="canonical" href="https://example.com/">
 <!-- ▲ canonicalのURLは実際に公開するドメインに置き換えてください -->
 
 <!-- SEO: OGP(Facebook等でのシェア表示) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ITスキルアップクイズ">
-<meta property="og:title" content="ITスキルアップクイズ | 全1000問からランダム出題">
-<meta property="og:description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの全1000問から毎回ランダムに100問を出題。新社会人・学生の基礎固めに。">
+<meta property="og:title" content="ITスキルアップクイズ | 1000問以上からランダム出題">
+<meta property="og:description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツール・AIの1000問以上から毎回ランダムに100問を出題。新社会人・学生の基礎固めに。">
 <meta property="og:url" content="https://example.com/">
 <meta property="og:image" content="https://example.com/ogp-image.png">
 <meta property="og:locale" content="ja_JP">
@@ -22,8 +22,8 @@
 
 <!-- SEO: Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ITスキルアップクイズ | 全1000問からランダム出題">
-<meta name="twitter:description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの全1000問から毎回ランダムに100問を出題。">
+<meta name="twitter:title" content="ITスキルアップクイズ | 1000問以上からランダム出題">
+<meta name="twitter:description" content="HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツール・AIの1000問以上から毎回ランダムに100問を出題。">
 <meta name="twitter:image" content="https://example.com/ogp-image.png">
 
 <link rel="stylesheet" href="quiz-style.css">
@@ -34,7 +34,7 @@
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "ITスキルアップクイズ",
-  "description": "HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの全1000問から毎回ランダムに100問を出題する無料学習クイズ。",
+  "description": "HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツール・AIの1000問以上から毎回ランダムに100問を出題する無料学習クイズ。",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
   "inLanguage": "ja",
@@ -90,8 +90,8 @@
       </div>
 
       <p class="lead">
-        HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツールの
-        全<strong>1000問</strong>から、毎回ランダムに<strong>100問</strong>を出題。<br>
+        HTML/CSS・JavaScript・ネットワーク・セキュリティ・開発ツール・AIの
+        全<strong><span id="total-question-count">1000問</span></strong>から、毎回ランダムに<strong>100問</strong>を出題。<br>
         1問ごとに解説付きで、新社会人・学生の基礎固めにどうぞ。
       </p>
 
@@ -142,6 +142,13 @@
           <button class="category-btn" data-category="開発ツール・IT実務用語" style="--cat-color:#8854D0">
             <span class="dot" style="background:#8854D0"></span>
             <span class="category-btn-name">開発ツール・IT実務用語</span>
+            <span class="category-btn-sub">200問からランダム100問</span>
+          </button>
+        </li>
+        <li>
+          <button class="category-btn" data-category="AI・機械学習" style="--cat-color:#00BCD4">
+            <span class="dot" style="background:#00BCD4"></span>
+            <span class="category-btn-name">AI・機械学習</span>
             <span class="category-btn-sub">200問からランダム100問</span>
           </button>
         </li>
